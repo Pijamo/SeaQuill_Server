@@ -25,20 +25,22 @@ async function hello(req, res) {
 // Route 2 (test)
 async function test(req, res) {
 
-    var query = `
-    SELECT *
+    var query2 = `SELECT *
     FROM States
     `
 
-    connection.query(query, function(err, results, fields) {
-        if (err) console.log(err);
-        else {
-            res.json({ results: results })
+    connection.query(query2, function(error, results){
+        if (error){
+            console.log(error)
+            res.json({ error: error})
+        } else {
+            res.json({ results: results})
         }
-        })
+    })
 }
 
 
 module.exports = {
-    hello
+    hello,
+    test
 }
