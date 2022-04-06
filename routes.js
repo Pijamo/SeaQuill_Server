@@ -18,7 +18,7 @@ async function hello(req, res) {
     if (req.query.name) {
         res.send(`Hello, ${req.query.name}! Welcome to the SeaQuill server!`)
     } else {
-        res.send(`Hello! Welcome to the SeaQuill server!`)
+        res.send(`Hello! Welcome to the SeaQuill server test!`)
     }
 }
 
