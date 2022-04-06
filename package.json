@@ -1,0 +1,22 @@
+{
+  "name": "seaquill_server",
+  "version": "1.0.0",
+  "description": "Server for Seaquill",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "test",
+    "heroku",
+    "seaquill"
+  ],
+  "author": "Pijamo Ngullie",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.3"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
