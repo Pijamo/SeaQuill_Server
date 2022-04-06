@@ -1,9 +1,7 @@
 {
-    "rds_host": "database-1.cmqf2euvun9e.ap-south-1.rds.amazonaws.com",
+    "rds_host": "mydb.ci45v7tttzaf.us-east-1.rds.amazonaws.com",
     "rds_port": "3306",
-    "rds_user": "pijamo",
-    "rds_password" : "Loadingnaro",
-    "rds_db": "FIFA",
-    "server_host": "127.0.0.1",
-    "server_port": "process.env.PORT || 5000"
+    "rds_user": "teammate",
+    "rds_password" : "6y1T-iz@-4m,c",
+    "rds_db": "PROJECT_DB"
 }
