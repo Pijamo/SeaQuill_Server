@@ -11,7 +11,7 @@ const app = express();
 app.use(cors({ credentials: true, origin: ['http://localhost:3000'] }));
 
 // Route 1 - register as GET 
-app.get('/hello', routes.hello)
+app.get('/', routes.hello)
 
 app.listen(port, () => {
     console.log(`Server running at ${port}`);
