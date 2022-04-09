@@ -13,7 +13,7 @@ const connection = mysql.createConnection({
 connection.connect();
 
 
-// Route 1 (test)
+// Route 0 (test)
 async function hello(req, res) {
     // a GET request to /hello?name=Steve
     if (req.query.name) {
@@ -28,7 +28,7 @@ async function hello(req, res) {
 }
 
 
-// Route 2 (test)
+// Route (test)
 async function test(req, res) {
 
     var query2 = `SELECT *
@@ -44,6 +44,40 @@ async function test(req, res) {
         }
     })
 }
+
+// Route 1 (getCounties)
+async function getCounties(req, res) {
+
+}
+
+
+// ********************************************
+//            SEARCH PAGES ROUTES
+// ********************************************
+
+//Route 2: Get State List
+
+
+//Route 3: Get property List
+
+
+// ********************************************
+//            LISTINGS PAGES ROUTES
+// ********************************************
+//Route 4: Get Property List Based on Filter
+//Route 5: Fresh Api call based on Page No.
+
+
+//LISTINGS DETAILS
+//ROUTE 6: CALL API for Details of Listings
+
+
+// ********************************************
+//            QUIZ ROUTES
+// ********************************************
+//ROUTE 6: Call to Server for Prosperity Index
+//Value: Prosperity Index Array
+//Return: List of counties
 
 
 module.exports = {
