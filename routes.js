@@ -21,7 +21,7 @@ async function hello(req, res) {
         console.log(string)
         res.send(string)
     } else {
-        var string = `Hello! Welcome to the SeaQuill server test!`
+        var string = `Hello! Welcome to the SeaQuill server test2!`
         console.log(string)
         res.send(string)
     }
