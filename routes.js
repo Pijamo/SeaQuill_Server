@@ -17,9 +17,13 @@ connection.connect();
 async function hello(req, res) {
     // a GET request to /hello?name=Steve
     if (req.query.name) {
-        res.send(`Hello, ${req.query.name}! Welcome to the SeaQuill server!`)
+        var string = `Hello, ${req.query.name}! Welcome to the SeaQuill server!`
+        console.log(string)
+        res.send(string)
     } else {
-        res.send(`Hello! Welcome to the SeaQuill server test!`)
+        var string = `Hello! Welcome to the SeaQuill server test!`
+        console.log(string)
+        res.send(string)
     }
 }
 
