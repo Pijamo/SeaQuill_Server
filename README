@@ -1,0 +1,12 @@
+
+TO start locally:
+npm start
+
+http://localhost:3000/
+
+
+On the server
+
+Push to Github:
+and then go to this site:
+https://seaquill.herokuapp.com/

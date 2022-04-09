@@ -1,5 +1,5 @@
 {
-    "rds_host": "mydb.ci45v7tttzaf.us-east-1.rds.amazonaws.com",
+    "rds_host": "database-1.czjg5ui3vmyw.us-east-1.rds.amazonaws.com",
     "rds_port": "3306",
     "rds_user": "teammate",
     "rds_password" : "6y1T-iz@-4m,c",

@@ -12,6 +12,7 @@ const connection = mysql.createConnection({
 });
 connection.connect();
 
+
 // Route 1 (test)
 async function hello(req, res) {
     // a GET request to /hello?name=Steve
@@ -21,6 +22,7 @@ async function hello(req, res) {
         res.send(`Hello! Welcome to the SeaQuill server test!`)
     }
 }
+
 
 // Route 2 (test)
 async function test(req, res) {
