@@ -13,23 +13,11 @@ const connection = mysql.createConnection({
 });
 connection.connect();
 
+// ********************************************
+//            QUIZ ROUTES
+// ********************************************
+//ROUTE 1: County Recommendations
 
-// Route 0 (test)
-async function hello(req, res) {
-    // a GET request to /hello?name=Steve
-    if (req.query.name) {
-        var string = `Hello, ${req.query.name}! Welcome to the SeaQuill server!`
-        console.log(string)
-        res.send(string)
-    } else {
-        var string = `Hello! Welcome to the SeaQuill server test2!`
-        console.log(string)
-        res.send(string)
-    }
-    
-}
-
-// Route 1 (counties)
 async function counties(req, res) {
 
     const page = req.query.page;
@@ -154,15 +142,85 @@ else{
         }
     })
 }
-
-
 // ********************************************
-//            SEARCH PAGES ROUTES
+//            QUIZ RESULT ROUTES
 // ********************************************
 
-//Route 2: Get Cities and States based on partially or fully completed city input
+//Route 2: Returns a list of cities in the selected county, filtered by user preference for city size (metropolitan, urban, suburban, rural)
+async function cities(req, res) {
+    const popUpper= req.query.popUpper ? req.query.popUpper: 50000
+    const popLower = req.query.popLower ? req.query.popLower: 0
+    const region = req.query.region ? req.query.region : [0,1,2,3,4]
+    
+    query = `SELECT D.city, S.name as State, D.zip, D.pop_density, R.total_score
+    FROM Districts D JOIN Counties C ON D.county_id = C.fips_code
+    JOIN States S ON S.id = C.state_id
+    JOIN Recommendations R on R.county_id = D.county_id
+    WHERE D.pop_density > ${popLower} 
+    AND D.pop_density < ${popUpper}
+    AND S.region_id IN (${region})  
+    ORDER BY D.pop_density DESC;`
 
-async function searchCity(req, res) {
+    connection.query(query, function(error, results){
+        if (error){
+            console.log(error)
+            res.json({ error: error})
+        } else {
+            res.json({ results: results})
+        }
+    })
+}
+
+//Route 3: Returns climate information for the selected county
+async function climate(req, res) {
+    const county = req.query.county;
+
+    
+    query = `SELECT county_id, month, AVG(temp_avg), AVG(temp_min), AVG(temp_max),
+    AVG(rain_days) as total_rain, AVG(snow_days) as total_snow
+    FROM Climate C JOIN Weather_Stations W ON C.station_id = W.id
+    WHERE county_id = ${county}
+    GROUP BY county_id, month;`
+
+    connection.query(query, function(error, results){
+        if (error){
+            console.log(error)
+            res.json({ error: error})
+        } else {
+            res.json({ results: results})
+        }
+    })
+}
+
+//Route 4: Returns job information for the selected county
+async function jobs(req, res) {
+    const county = req.query.county;
+    const keyword = req.query.keyword;
+
+    query = `SELECT title, total_jobs, mean_salary, location_quotient
+                FROM Employment E JOIN Jobs J ON E.job_code = J.code
+                JOIN CountiesInOccZone C ON C.occ_zone = E.occ_zone
+                WHERE county_id = ${county} AND
+                title LIKE '%${keyword}%'
+                LIMIT 10;`
+
+    connection.query(query, function(error, results){
+        if (error){
+            console.log(error)
+            res.json({ error: error})
+        } else {
+            res.json({ results: results})
+        }
+    })
+}
+
+// ********************************************
+//            LISTING SEARCH PAGE ROUTES
+// ********************************************
+
+//Route 5: Get Cities and States based on partially or fully completed city input
+
+async function cityState(req, res) {
 
     const city = req.query.city
 
@@ -181,30 +239,67 @@ async function searchCity(req, res) {
     })
 }
 
-//Route 3: Get property List
+// ********************************************
+//            User Routes
+// ********************************************
+async function users(req, res) {
+    
+    const email = req.query.email
+    const password = req.query.password
 
+    query = `SELECT first_name, last_name, zip
+    FROM Users
+    WHERE email = '${email}' AND password = SHA1('${password}');`
 
+    connection.query(query, function(error, results){
+        if (error){
+            console.log(error)
+            res.json({ error: error})
+        } else {
+            res.json({ results: results})
+        }
+    })
+}
+
+async function addUser(req, res) {
+    
+    const email = req.query.email
+    const password = req.query.password
+    const firstName = req.query.firstName
+    const lastName = req.query.lastName
+    const gender = req.query.gender
+    const dob = req.query.dob ? req.query.dob: 'NULL'
+    const zip = req.query.zip ? req.query.zip: 'NULL'
+
+    query = `INSERT INTO Users
+    VALUES ('${email}', '${firstName}', '${lastName}', SHA1('${password}'), '${gender}', ${dob}, ${zip});`
+
+    connection.query(query, function(error, results){
+        if (error){
+            console.log(error)
+            if (error.errno == 1062){
+                res.send('An account is already associated with this email address.')
+            }
+        } else {
+            console.log("Added entry to User database")
+        }
+    })
+}
+
+// ********************************************
+//            Favorites Routes
+// ********************************************
 
 
 // ********************************************
 //            LISTINGS PAGES ROUTES
 // ********************************************
-//Route 4: Get Property List Based on Filter
-//Route 5: Fresh Api call based on Page No.
+//Route : Get Property List Based on Filter
+//Route : Fresh Api call based on Page No.
 
 
-//LISTINGS DETAILS
-//ROUTE 6: CALL API for Details of Listings
-
-
-// ********************************************
-//            QUIZ ROUTES
-// ********************************************
-//ROUTE 6: Call to Server for Prosperity Index
-//Value: Prosperity Index Array
-//Return: List of counties
 
 
 module.exports = {
-    hello, counties, searchCity
+    counties, cityState, cities, climate, jobs,users, addUser
 }
