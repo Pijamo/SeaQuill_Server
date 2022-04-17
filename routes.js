@@ -146,7 +146,7 @@ else{
 //            QUIZ RESULT ROUTES
 // ********************************************
 
-//Route 2: Returns a list of cities in the selected county, filtered by user preference for city size (metropolitan, urban, suburban, rural)
+//Route 2: Returns a list of cities in the selected county, filtered by user preference for city size
 async function cities(req, res) {
     const popUpper= req.query.popUpper ? req.query.popUpper: 50000
     const popLower = req.query.popLower ? req.query.popLower: 0
@@ -242,6 +242,7 @@ async function cityState(req, res) {
 // ********************************************
 //            User Routes
 // ********************************************
+//Route 6: Retrieve user credentials from Users database upon login
 async function users(req, res) {
     
     const email = req.query.email
@@ -260,7 +261,7 @@ async function users(req, res) {
         }
     })
 }
-
+//Route 7: Add user credentials to Users database
 async function addUser(req, res) {
     
     const email = req.query.email
@@ -289,7 +290,51 @@ async function addUser(req, res) {
 // ********************************************
 //            Favorites Routes
 // ********************************************
+//Route 8: Retrieve favorite county for user from Favorites database
+async function favorites(req, res) {
+    
+    const email = req.query.email
 
+    query = `SELECT C.name as County, S.name as State
+    FROM Favorites F JOIN Counties C ON F.county_id = C.fips_code
+    JOIN States S ON C.state_id = S.id
+    WHERE user_id = '${email}';`
+
+    connection.query(query, function(error, results){
+        if (error){
+            console.log(error)
+            res.json({ error: error})
+        } else {
+            res.json({ results: results})
+        }
+    })
+}
+//Route 9: Add favorite county to Favorites database
+async function modifyFavorites(req, res) {
+    const email = req.query.email 
+    const county = req.query.county
+    const action = req.params.action
+
+    if (action === 'add'){
+        query = `INSERT INTO Favorites
+        VALUES ('${email}', '${county}');`
+    }
+    else if(action === 'delete'){
+        query = `DELETE FROM Favorites
+        WHERE user_id='${email}' AND county_id = ${county};`
+    }
+
+    connection.query(query, function(error, results){
+        if (error){
+            console.log(error)
+            if (error.errno == 1062){
+                res.send('County is already in favorites!')
+            }
+        } else {
+            console.log("Added or removed entry from Favorites database")
+        }
+    })
+}
 
 // ********************************************
 //            LISTINGS PAGES ROUTES
@@ -298,8 +343,6 @@ async function addUser(req, res) {
 //Route : Fresh Api call based on Page No.
 
 
-
-
 module.exports = {
-    counties, cityState, cities, climate, jobs,users, addUser
+    counties, cityState, cities, climate, jobs,users, addUser,favorites, modifyFavorites
 }
