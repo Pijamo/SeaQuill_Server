@@ -20,17 +20,9 @@ connection.connect();
 
 async function counties(req, res) {
 
-    const page = req.query.page;
-    const pagesize = req.query.pagesize ? req.query.pagesize: 10;
-
-    var offset;
-    if (page && !isNaN(page)){
-        offset = (page -1) * pagesize
-    }
-    else{
-        offset = 0
-    }
-
+    const page = req.query.page !== '0' ? req.query.page : 1;
+    const pagesize = req.query.pagesize !=='0' ? req.query.pagesize: 10;
+    var offset = (page -1) * pagesize
 
     const education =parseInt(req.query.education);
     const freedom = parseInt(req.query.freedom);
@@ -49,83 +41,82 @@ async function counties(req, res) {
     const zip = req.query.zip;
 
     var create_view = `DROP VIEW IF EXISTS AdjustedScores;
-
-    CREATE VIEW AdjustedScores(county_id, county_name, county_state, metric, adj_score) AS
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${education} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Education')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${freedom} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Personal Freedom')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${safety} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Safety and Security')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${social} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Social Capital')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${business} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Business Environment')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${economic} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Economic Quality')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${infrastructure} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Infrastructure')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${governance} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Governance')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${health} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Health')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${living} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Living Conditions')
-
-UNION
-
-(SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${environment} AS adj_score
-FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
-WHERE metric = 'Natural Environment');`;
+    CREATE VIEW AdjustedScores AS
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${education} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Education')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${freedom} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Personal Freedom')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${safety} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Safety and Security')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${social} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Social Capital')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${business} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Business Environment')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${economic} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Economic Quality')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${infrastructure} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Infrastructure')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${governance} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Governance')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${health} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Health')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${living} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Living Conditions')
+    
+    UNION
+    
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${environment} AS adj_score
+    FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
+    WHERE metric = 'Natural Environment');`;
 
 var recommendations;
-if (zip){
+if (zip != 0){
     recommendations = `DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT A.county_id, A.county_name, A.county_state, SUM(adj_score) /  ${total} AS total_score
+    SELECT A.fips_code, A.name as county, A.state_id as state, SUM(adj_score) /  ${total} AS total_score
     FROM AdjustedScores A
-    GROUP BY A.county_id, A.county_name, A.county_state
+    GROUP BY A.fips_code, A.name, A.state_id
     HAVING total_score >= (SELECT SUM(adj_score) /  ${total} AS current_score
-                            FROM AdjustedScores NATURAL JOIN Districts
-                            WHERE zip = ${zip})
-    ORDER BY total_score DESC;
+                            FROM AdjustedScores A JOIN Districts D ON A.fips_code = D.county_id
+                        WHERE zip = ${zip})
+    ORDER BY total_score DESC;  
     
     SELECT * FROM Recommendations
     LIMIT ${offset}, ${pagesize};`
@@ -133,9 +124,9 @@ if (zip){
 else{
     recommendations = `DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT county_id, county_name, county_state, SUM(adj_score) /  ${total} AS total_score
-    FROM AdjustedScores
-    GROUP BY county_id, county_name, county_state
+    SELECT fips_code, A.name as county, S.name as state, SUM(adj_score) /  ${total} AS total_score
+    FROM AdjustedScores A JOIN States S ON S.id=A.state_id
+    GROUP BY fips_code, county, state
     ORDER BY total_score DESC;
     
     SELECT * FROM Recommendations
