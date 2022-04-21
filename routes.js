@@ -222,21 +222,74 @@ async function jobs(req, res) {
 
 async function cityState(req, res) {
 
-    const city = req.query.city
+    const state = req.query.state
+    
 
-    query = `SELECT DISTINCT D.city, S.name
+    query = `SELECT D.city, S.name, C.state_id
     FROM States S JOIN Counties C ON S.id = C.state_id
     JOIN Districts D ON C.fips_code = D.county_id
-    WHERE D.city LIKE '%${city}%' ;`
+    WHERE S.name = '${state}' 
+    ;`
 
     connection.query(query, function(error, results){
+
+        var resultArray = Object.values(JSON.parse(JSON.stringify(results)))
+
+        var newState = false;
+        var newCity;
+        var cities = []
+        var jObject = {name: " ", state_id: " ", cities:[]}
+        var rObject = {};
+        
+        // console.log(results[0])
+        
+        console.log(resultArray.length)
+
         if (error){
             console.log(error)
             res.json({ error: error})
         } else {
-            res.json({ results: results})
-        }
+
+
+            for(var i = 0; i < resultArray.length; i++){
+                newCity = true;
+                var currentState = resultArray[i]
+                var currentName = currentState.name;
+                var currentId = currentState.state_id;
+                var city = currentState.city;
+                console.log(city)
+            
+                
+                while (newState == false && newCity == true){
+                cities.push(city);
+                newCity == false;
+                }
+                // }
+                console.log(cities)
+
+        //         }
+        //         jObject.name = currentName;
+        //         jObject.state_id = currentId;
+        //         jObject.cities = cities;
+        //         res.push(jObject);
+        //         rObject.push(jObject);
+        //         newState = true;
+        //         cities = [];
+        //     }
+
+        //     results = rObject;
+  
+            
+        
+    }
+        newState = true;
+
+    }
+        res.json({ results: results})
+    
     })
+
+
 }
 
 // ********************************************
