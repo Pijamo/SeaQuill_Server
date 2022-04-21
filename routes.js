@@ -23,6 +23,15 @@ async function counties(req, res) {
     const page = req.query.page;
     const pagesize = req.query.pagesize ? req.query.pagesize: 10;
 
+    var offset;
+    if (page && !isNaN(page)){
+        offset = (page -1) * pagesize
+    }
+    else{
+        offset = 0
+    }
+
+
     const education =parseInt(req.query.education);
     const freedom = parseInt(req.query.freedom);
     const safety= parseInt(req.query.safety);
@@ -119,7 +128,7 @@ if (zip){
     ORDER BY total_score DESC;
     
     SELECT * FROM Recommendations
-    LIMIT ${pagesize};`
+    LIMIT ${offset}, ${pagesize};`
 }
 else{
     recommendations = `DROP TABLE IF EXISTS Recommendations;
@@ -130,7 +139,7 @@ else{
     ORDER BY total_score DESC;
     
     SELECT * FROM Recommendations
-    LIMIT ${pagesize};`
+    LIMIT ${offset}, ${pagesize};`
 }
 
     connection.query(create_view + recommendations, function(error, results){
@@ -151,7 +160,13 @@ async function cities(req, res) {
     const popUpper= req.query.popUpper ? req.query.popUpper: 50000
     const popLower = req.query.popLower ? req.query.popLower: 0
     const region = req.query.region ? req.query.region : [0,1,2,3,4]
-    
+    const county = req.query.region
+    if (county){
+
+    }
+
+
+
     query = `SELECT D.city, S.name as State, D.zip, D.pop_density, R.total_score
     FROM Districts D JOIN Counties C ON D.county_id = C.fips_code
     JOIN States S ON S.id = C.state_id
