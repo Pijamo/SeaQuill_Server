@@ -234,69 +234,65 @@ async function cityState(req, res) {
     query = `SELECT D.city, S.name, C.state_id
     FROM States S JOIN Counties C ON S.id = C.state_id
     JOIN Districts D ON C.fips_code = D.county_id
-    WHERE S.name = '${state}' 
     ;`
 
     connection.query(query, function(error, results){
 
         var resultArray = Object.values(JSON.parse(JSON.stringify(results)))
-
-        var newState = false;
-        var newCity;
-        var cities = []
-        var jObject = {name: " ", state_id: " ", cities:[]}
-        var rObject = {};
+        var cities = [];
+        var currentState;
+        var nextState;
+        var currentName;
+        var currentId;
+        var nextId;
+        var jObject = {name: " ", state_id: " ", cities:[]};
+        var rObject = [];
         
-        // console.log(results[0])
-        
-        console.log(resultArray.length)
-
         if (error){
             console.log(error)
             res.json({ error: error})
         } else {
+            for(var i = 0; i < resultArray.length-1; i++){
+                currentState = resultArray[i]
+                nextState = resultArray[i+1]
+                currentName = currentState.name
+                currentId = currentState.state_id
+                nextId = nextState.state_id
 
-
-            for(var i = 0; i < resultArray.length; i++){
-                newCity = true;
-                var currentState = resultArray[i]
-                var currentName = currentState.name;
-                var currentId = currentState.state_id;
-                var city = currentState.city;
-                console.log(city)
-            
-                
-                while (newState == false && newCity == true){
-                cities.push(city);
-                newCity == false;
+                if(currentId === nextId){
+                    city = currentState.city;
+                    cities.push(city);
+                    
                 }
-                // }
-                console.log(cities)
+                else{
+                    cities.push(city);
+                    jObject = {currentName, currentId, cities}
+                    rObject.push(jObject)
+                    cities =[]
 
-        //         }
-        //         jObject.name = currentName;
-        //         jObject.state_id = currentId;
-        //         jObject.cities = cities;
-        //         res.push(jObject);
-        //         rObject.push(jObject);
-        //         newState = true;
-        //         cities = [];
-        //     }
+                }
+                
+                
+                }
+                
+                
 
-        //     results = rObject;
-  
+            }
+            
+
+
+                // console.log(jObject)
+            res.json({ results: rObject})
+                
+                    
+            
+            })
+
             
         
-    }
-        newState = true;
-
-    }
-        res.json({ results: results})
     
-    })
-
-
 }
+
 
 // ********************************************
 //            User Routes
