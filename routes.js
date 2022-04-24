@@ -117,8 +117,9 @@ if (zip != 0){
                             FROM AdjustedScores A JOIN Districts D ON A.fips_code = D.county_id
                         WHERE zip = ${zip})
     ORDER BY total_score DESC;  
-    
-    SELECT * FROM Recommendations
+
+    SELECT * 
+    FROM Recommendations
     LIMIT ${offset}, ${pagesize};`
 }
 else{
@@ -128,8 +129,9 @@ else{
     FROM AdjustedScores A JOIN States S ON S.id=A.state_id
     GROUP BY fips_code, county, state
     ORDER BY total_score DESC;
-    
-    SELECT * FROM Recommendations
+
+    SELECT *
+    FROM Recommendations
     LIMIT ${offset}, ${pagesize};`
 }
 
@@ -148,24 +150,22 @@ else{
 
 //Route 2: Returns a list of cities in the selected county, filtered by user preference for city size
 async function cities(req, res) {
-    const popUpper= req.query.popUpper ? req.query.popUpper: 50000
+    const county = req.query.county
     const popLower = req.query.popLower ? req.query.popLower: 0
-    const region = req.query.region ? req.query.region : [0,1,2,3,4]
-    const county = req.query.region
-    if (county){
+    const popUpper= req.query.popUpper ? req.query.popUpper: 100000
+    
+    const page = req.query.page !== '0' ? req.query.page : 1;
+    const pagesize = req.query.pagesize !=='0' ? req.query.pagesize: 10;
+    var offset = (page -1) * pagesize
 
-    }
-
-
-
-    query = `SELECT D.city, S.name as State, D.zip, D.pop_density, R.total_score
-    FROM Districts D JOIN Counties C ON D.county_id = C.fips_code
-    JOIN States S ON S.id = C.state_id
-    JOIN Recommendations R on R.county_id = D.county_id
-    WHERE D.pop_density > ${popLower} 
-    AND D.pop_density < ${popUpper}
-    AND S.region_id IN (${region})  
-    ORDER BY D.pop_density DESC;`
+    query = `SELECT city, sum(population) as Population, max(pop_density) as Max_Population_Density
+    FROM Districts 
+    WHERE county_id = ${county}
+    GROUP BY city
+    HAVING sum(population) > ${popLower}
+    AND sum(population) < ${popUpper}
+    ORDER BY Population DESC
+    LIMIT ${offset}, ${pagesize};`
 
     connection.query(query, function(error, results){
         if (error){
