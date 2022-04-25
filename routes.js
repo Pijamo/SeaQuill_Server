@@ -20,8 +20,8 @@ connection.connect();
 
 async function counties(req, res) {
 
-    const page = req.query.page !== '0' ? req.query.page : 1;
-    const pagesize = req.query.pagesize !=='0' ? req.query.pagesize: 10;
+    const page = req.query.page && !isNaN(req.query.page) ? req.query.page : 1;
+    const pagesize = req.query.pagesize && !isNaN(req.query.pagesize) ? req.query.pagesize: 10;
     var offset = (page -1) * pagesize
 
     const education =parseInt(req.query.education);
@@ -38,10 +38,10 @@ async function counties(req, res) {
     const total = education + freedom + safety + social + business + economic + 
         infrastructure + governance + health + living + environment;
     
-    const zip = req.query.zip;
+    const zip = req.query.zip && !isNaN(req.query.zip) ? req.query.zip: 0;
 
-    var create_view = `DROP VIEW IF EXISTS AdjustedScores;
-    CREATE VIEW AdjustedScores AS
+    var create_temp = `DROP TABLE IF EXISTS AdjustedScores;
+    CREATE TEMPORARY TABLE AdjustedScores
     (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${education} AS adj_score
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Education')
@@ -108,14 +108,17 @@ async function counties(req, res) {
 
 var recommendations;
 if (zip != 0){
-    recommendations = `DROP TABLE IF EXISTS Recommendations;
+    recommendations = `DROP TABLE IF EXISTS user_score;
+    CREATE TEMPORARY TABLE user_score
+    SELECT SUM(adj_score) /  ${total} AS current_score
+        FROM AdjustedScores A JOIN Districts D ON A.fips_code = D.county_id
+        WHERE zip = ${zip};
+    DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT A.fips_code, A.name as county, A.state_id as state, SUM(adj_score) /  ${total} AS total_score
+    SELECT A.fips_code, A.name, A.state_id, SUM(adj_score) / ${total} AS total_score
     FROM AdjustedScores A
     GROUP BY A.fips_code, A.name, A.state_id
-    HAVING total_score >= (SELECT SUM(adj_score) /  ${total} AS current_score
-                            FROM AdjustedScores A JOIN Districts D ON A.fips_code = D.county_id
-                        WHERE zip = ${zip})
+    HAVING total_score >= (SELECT * FROM user_score)
     ORDER BY total_score DESC;  
 
     SELECT * 
@@ -125,7 +128,7 @@ if (zip != 0){
 else{
     recommendations = `DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT fips_code, A.name as county, S.name as state, SUM(adj_score) /  ${total} AS total_score
+    SELECT fips_code, A.name as county, S.name as state, SUM(adj_score) / ${total} AS total_score
     FROM AdjustedScores A JOIN States S ON S.id=A.state_id
     GROUP BY fips_code, county, state
     ORDER BY total_score DESC;
@@ -135,11 +138,12 @@ else{
     LIMIT ${offset}, ${pagesize};`
 }
 
-    connection.query(create_view + recommendations, function(error, results){
+    connection.query(create_temp+ recommendations, function(error, results){
         if (error){
             console.log(error)
             res.json({ error: error})
         } else {
+            console.log(create_temp + recommendations)
             res.json({ results: results[4]})
         }
     })
@@ -182,11 +186,11 @@ async function climate(req, res) {
     const county = req.query.county;
 
     
-    query = `SELECT county_id, month, AVG(temp_avg), AVG(temp_min), AVG(temp_max),
-    AVG(rain_days) as total_rain, AVG(snow_days) as total_snow
-    FROM Climate C JOIN Weather_Stations W ON C.station_id = W.id
+    query = `SELECT month, AVG(temp_avg) AS averageTemp, AVG(temp_min) AS minTemp, AVG(temp_max) AS maxTemp,
+    AVG(total_rain) AS totalRain, AVG(total_snow) AS totalSnow
+    FROM Climate C  JOIN Weather_Stations W ON C.station_id = W.id
     WHERE county_id = ${county}
-    GROUP BY county_id, month;`
+    GROUP BY month;`
 
     connection.query(query, function(error, results){
         if (error){
@@ -202,13 +206,17 @@ async function climate(req, res) {
 async function jobs(req, res) {
     const county = req.query.county;
     const keyword = req.query.keyword;
+    const page = req.query.page !== '0' ? req.query.page : 1;
+    const pagesize = req.query.pagesize !=='0' ? req.query.pagesize: 10;
+    var offset = (page -1) * pagesize
 
-    query = `SELECT title, total_jobs, mean_salary, location_quotient
+    query = `SELECT title, mean_salary, total_jobs, location_quotient
                 FROM Employment E JOIN Jobs J ON E.job_code = J.code
                 JOIN CountiesInOccZone C ON C.occ_zone = E.occ_zone
                 WHERE county_id = ${county} AND
                 title LIKE '%${keyword}%'
-                LIMIT 10;`
+                ORDER BY title, mean_salary
+                LIMIT ${offset}, ${pagesize};`
 
     connection.query(query, function(error, results){
         if (error){
