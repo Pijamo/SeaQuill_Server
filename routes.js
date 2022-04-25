@@ -143,7 +143,6 @@ else{
             console.log(error)
             res.json({ error: error})
         } else {
-            console.log(create_temp + recommendations)
             res.json({ results: results[4]})
         }
     })
@@ -155,11 +154,11 @@ else{
 //Route 2: Returns a list of cities in the selected county, filtered by user preference for city size
 async function cities(req, res) {
     const county = req.query.county
-    const popLower = req.query.popLower ? req.query.popLower: 0
-    const popUpper= req.query.popUpper ? req.query.popUpper: 100000
+    const popLower = req.query.popLower && !isNaN(req.query.popLower) ? req.query.popLower: 0
+    const popUpper= req.query.popUpper && !isNaN(req.query.popUpper) ? req.query.popUpper: 10000000
     
-    const page = req.query.page !== '0' ? req.query.page : 1;
-    const pagesize = req.query.pagesize !=='0' ? req.query.pagesize: 10;
+    const page = req.query.page && !isNaN(req.query.page) ? req.query.page : 1;
+    const pagesize = req.query.pagesize && !isNaN(req.query.pagesize) ? req.query.pagesize: 10;
     var offset = (page -1) * pagesize
 
     query = `SELECT city, sum(population) as Population, max(pop_density) as Max_Population_Density
@@ -206,8 +205,8 @@ async function climate(req, res) {
 async function jobs(req, res) {
     const county = req.query.county;
     const keyword = req.query.keyword;
-    const page = req.query.page !== '0' ? req.query.page : 1;
-    const pagesize = req.query.pagesize !=='0' ? req.query.pagesize: 10;
+    const page = req.query.page && !isNaN(req.query.page) ? req.query.page : 1;
+    const pagesize = req.query.pagesize && !isNaN(req.query.pagesize) ? req.query.pagesize: 10;
     var offset = (page -1) * pagesize
 
     query = `SELECT title, mean_salary, total_jobs, location_quotient
@@ -223,6 +222,7 @@ async function jobs(req, res) {
             console.log(error)
             res.json({ error: error})
         } else {
+            console.log(query)
             res.json({ results: results})
         }
     })
