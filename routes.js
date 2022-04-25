@@ -257,7 +257,7 @@ async function cityState(req, res) {
 //            User Routes
 // ********************************************
 //Route 6: Retrieve user credentials from Users database upon login
-async function users(req, res) {
+async function getUser(req, res) {
     
     const email = req.query.email
     const password = req.query.password
@@ -271,6 +271,7 @@ async function users(req, res) {
             console.log(error)
             res.json({ error: error})
         } else {
+            console.log("Retrieved User")
             res.json({ results: results})
         }
     })
@@ -283,8 +284,8 @@ async function addUser(req, res) {
     const firstName = req.query.firstName
     const lastName = req.query.lastName
     const gender = req.query.gender
-    const dob = req.query.dob ? req.query.dob: 'NULL'
-    const zip = req.query.zip ? req.query.zip: 'NULL'
+    const dob = req.query.dob && !isNaN(req.query.dob) ? req.query.dob: 'NULL'
+    const zip = req.query.zip && !isNaN(req.query.zip) ? req.query.zip: 'NULL'
 
     query = `INSERT INTO Users
     VALUES ('${email}', '${firstName}', '${lastName}', SHA1('${password}'), '${gender}', ${dob}, ${zip});`
@@ -358,5 +359,5 @@ async function modifyFavorites(req, res) {
 
 
 module.exports = {
-    counties, cityState, cities, climate, jobs,users, addUser,favorites, modifyFavorites
+    counties, cityState, cities, climate, jobs,getUser, addUser,favorites, modifyFavorites
 }

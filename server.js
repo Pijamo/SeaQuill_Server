@@ -50,10 +50,10 @@ app.get('/cityState', routes.cityState)
 //            User Routes
 // ********************************************
 //Route 6: Retrieve user credentials from Users database upon login
-app.get('/users',routes.users)
+app.get('/users',routes.getUser)
 
 //Route 7: Add user credentials to Users database
-app.get('/addUser',routes.addUser)
+app.post('/users',routes.addUser)
 
 // ********************************************
 //            Favorites Routes
