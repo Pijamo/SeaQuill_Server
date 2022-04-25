@@ -42,67 +42,67 @@ async function counties(req, res) {
 
     var create_temp = `DROP TABLE IF EXISTS AdjustedScores;
     CREATE TEMPORARY TABLE AdjustedScores
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${education} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${education} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Education')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${freedom} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${freedom} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Personal Freedom')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${safety} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${safety} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Safety and Security')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${social} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${social} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Social Capital')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${business} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${business} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Business Environment')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${economic} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${economic} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Economic Quality')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${infrastructure} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${infrastructure} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Infrastructure')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${governance} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${governance} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Governance')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${health} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${health} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Health')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${living} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${living} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Living Conditions')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${environment} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${environment} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Natural Environment');`;
 
@@ -110,12 +110,12 @@ var recommendations;
 if (zip != 0){
     recommendations = `DROP TABLE IF EXISTS user_score;
     CREATE TEMPORARY TABLE user_score
-    SELECT SUM(adj_score) /  ${total} AS current_score
+    SELECT SUM(score_2021*ranking) /  ${total} AS current_score
         FROM AdjustedScores A JOIN Districts D ON A.fips_code = D.county_id
         WHERE zip = ${zip};
     DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT A.fips_code, A.name, A.state_id, SUM(adj_score) / ${total} AS total_score
+    SELECT A.fips_code, A.name, A.state_id, SUM(score_2021*ranking) / ${total} AS total_score
     FROM AdjustedScores A
     GROUP BY A.fips_code, A.name, A.state_id
     HAVING total_score >= (SELECT * FROM user_score)
@@ -128,7 +128,7 @@ if (zip != 0){
 else{
     recommendations = `DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT fips_code, A.name as county, S.name as state, SUM(adj_score) / ${total} AS total_score
+    SELECT fips_code, A.name as county, S.name as state, SUM(score_2021*ranking) / ${total} AS total_score
     FROM AdjustedScores A JOIN States S ON S.id=A.state_id
     GROUP BY fips_code, county, state
     ORDER BY total_score DESC;
@@ -150,6 +150,24 @@ else{
 // ********************************************
 //            QUIZ RESULT ROUTES
 // ********************************************
+
+//Route: Retrieve prosperity scores for a given county
+async function prosperity(req, res) {
+    const county = req.query.county;
+
+    query = `SELECT metric, ROUND(score_2021,0) as score FROM Prosperity
+    WHERE county_id = ${county}`
+
+    connection.query(query, function(error, results){
+        if (error){
+            console.log(error)
+            res.json({ error: error})
+        } else {
+            res.json({ results: results})
+        }
+    })
+}
+
 
 //Route 2: Returns a list of cities in the selected county, filtered by user preference for city size
 async function cities(req, res) {
@@ -184,7 +202,6 @@ async function cities(req, res) {
 async function climate(req, res) {
     const county = req.query.county;
 
-    
     query = `SELECT month, ROUND(AVG(temp_avg),0) AS 'Avg Temperature', ROUND(AVG(temp_min),0) AS 'Low Temperature', ROUND(AVG(temp_max),0) AS 'High Temperature',
     ROUND(AVG(total_rain),2) AS 'Total Rain', ROUND(AVG(total_snow),2) AS 'Total Snow'
     FROM Climate C  JOIN Weather_Stations W ON C.station_id = W.id
@@ -359,5 +376,5 @@ async function modifyFavorites(req, res) {
 
 
 module.exports = {
-    counties, cityState, cities, climate, jobs,getUser, addUser,favorites, modifyFavorites
+    counties, prosperity, cityState, cities, climate, jobs,getUser, addUser,favorites, modifyFavorites
 }
