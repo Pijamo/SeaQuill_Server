@@ -20,8 +20,8 @@ connection.connect();
 
 async function counties(req, res) {
 
-    const page = req.query.page !== '0' ? req.query.page : 1;
-    const pagesize = req.query.pagesize !=='0' ? req.query.pagesize: 10;
+    const page = req.query.page && !isNaN(req.query.page) ? req.query.page : 1;
+    const pagesize = req.query.pagesize && !isNaN(req.query.pagesize) ? req.query.pagesize: 10;
     var offset = (page -1) * pagesize
 
     const education =parseInt(req.query.education);
@@ -38,84 +38,87 @@ async function counties(req, res) {
     const total = education + freedom + safety + social + business + economic + 
         infrastructure + governance + health + living + environment;
     
-    const zip = req.query.zip;
+    const zip = req.query.zip && !isNaN(req.query.zip) ? req.query.zip: 0;
 
-    var create_view = `DROP VIEW IF EXISTS AdjustedScores;
-    CREATE VIEW AdjustedScores AS
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${education} AS adj_score
+    var create_temp = `DROP TABLE IF EXISTS AdjustedScores;
+    CREATE TEMPORARY TABLE AdjustedScores
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${education} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Education')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${freedom} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${freedom} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Personal Freedom')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${safety} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${safety} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Safety and Security')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${social} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${social} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Social Capital')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${business} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${business} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Business Environment')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021 * ${economic} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${economic} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Economic Quality')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${infrastructure} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${infrastructure} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Infrastructure')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${governance} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${governance} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Governance')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${health} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${health} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Health')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${living} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${living} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Living Conditions')
     
     UNION
     
-    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021  * ${environment} AS adj_score
+    (SELECT C.fips_code, C.name, C.state_id, metric, score_2021, ${environment} AS ranking
     FROM Prosperity P JOIN Counties C ON P.county_id = C.fips_code
     WHERE metric = 'Natural Environment');`;
 
 var recommendations;
 if (zip != 0){
-    recommendations = `DROP TABLE IF EXISTS Recommendations;
+    recommendations = `DROP TABLE IF EXISTS user_score;
+    CREATE TEMPORARY TABLE user_score
+    SELECT SUM(score_2021*ranking) /  ${total} AS current_score
+        FROM AdjustedScores A JOIN Districts D ON A.fips_code = D.county_id
+        WHERE zip = ${zip};
+    DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT A.fips_code, A.name as county, A.state_id as state, SUM(adj_score) /  ${total} AS total_score
+    SELECT A.fips_code, A.name, A.state_id, SUM(score_2021*ranking) / ${total} AS total_score
     FROM AdjustedScores A
     GROUP BY A.fips_code, A.name, A.state_id
-    HAVING total_score >= (SELECT SUM(adj_score) /  ${total} AS current_score
-                            FROM AdjustedScores A JOIN Districts D ON A.fips_code = D.county_id
-                        WHERE zip = ${zip})
+    HAVING total_score >= (SELECT * FROM user_score)
     ORDER BY total_score DESC;  
 
     SELECT * 
@@ -125,7 +128,7 @@ if (zip != 0){
 else{
     recommendations = `DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT fips_code, A.name as county, S.name as state, SUM(adj_score) /  ${total} AS total_score
+    SELECT fips_code, A.name as county, S.name as state, SUM(score_2021*ranking) / ${total} AS total_score
     FROM AdjustedScores A JOIN States S ON S.id=A.state_id
     GROUP BY fips_code, county, state
     ORDER BY total_score DESC;
@@ -135,7 +138,7 @@ else{
     LIMIT ${offset}, ${pagesize};`
 }
 
-    connection.query(create_view + recommendations, function(error, results){
+    connection.query(create_temp+ recommendations, function(error, results){
         if (error){
             console.log(error)
             res.json({ error: error})
@@ -148,14 +151,32 @@ else{
 //            QUIZ RESULT ROUTES
 // ********************************************
 
+//Route: Retrieve prosperity scores for a given county
+async function prosperity(req, res) {
+    const county = req.query.county;
+
+    query = `SELECT metric, ROUND(score_2021,0) as score FROM Prosperity
+    WHERE county_id = ${county}`
+
+    connection.query(query, function(error, results){
+        if (error){
+            console.log(error)
+            res.json({ error: error})
+        } else {
+            res.json({ results: results})
+        }
+    })
+}
+
+
 //Route 2: Returns a list of cities in the selected county, filtered by user preference for city size
 async function cities(req, res) {
     const county = req.query.county
-    const popLower = req.query.popLower ? req.query.popLower: 0
-    const popUpper= req.query.popUpper ? req.query.popUpper: 100000
+    const popLower = req.query.popLower && !isNaN(req.query.popLower) ? req.query.popLower: 0
+    const popUpper= req.query.popUpper && !isNaN(req.query.popUpper) ? req.query.popUpper: 10000000
     
-    const page = req.query.page !== '0' ? req.query.page : 1;
-    const pagesize = req.query.pagesize !=='0' ? req.query.pagesize: 10;
+    const page = req.query.page && !isNaN(req.query.page) ? req.query.page : 1;
+    const pagesize = req.query.pagesize && !isNaN(req.query.pagesize) ? req.query.pagesize: 10;
     var offset = (page -1) * pagesize
 
     query = `SELECT city, sum(population) as Population, max(pop_density) as Max_Population_Density
@@ -181,12 +202,11 @@ async function cities(req, res) {
 async function climate(req, res) {
     const county = req.query.county;
 
-    
-    query = `SELECT county_id, month, AVG(temp_avg), AVG(temp_min), AVG(temp_max),
-    AVG(rain_days) as total_rain, AVG(snow_days) as total_snow
-    FROM Climate C JOIN Weather_Stations W ON C.station_id = W.id
+    query = `SELECT month, ROUND(AVG(temp_avg),0) AS 'Avg Temperature', ROUND(AVG(temp_min),0) AS 'Low Temperature', ROUND(AVG(temp_max),0) AS 'High Temperature',
+    ROUND(AVG(total_rain),2) AS 'Total Rain', ROUND(AVG(total_snow),2) AS 'Total Snow'
+    FROM Climate C  JOIN Weather_Stations W ON C.station_id = W.id
     WHERE county_id = ${county}
-    GROUP BY county_id, month;`
+    GROUP BY month;`
 
     connection.query(query, function(error, results){
         if (error){
@@ -202,13 +222,17 @@ async function climate(req, res) {
 async function jobs(req, res) {
     const county = req.query.county;
     const keyword = req.query.keyword;
+    const page = req.query.page && !isNaN(req.query.page) ? req.query.page : 1;
+    const pagesize = req.query.pagesize && !isNaN(req.query.pagesize) ? req.query.pagesize: 10;
+    var offset = (page -1) * pagesize
 
-    query = `SELECT title, total_jobs, mean_salary, location_quotient
+    query = `SELECT title, mean_salary, total_jobs, location_quotient
                 FROM Employment E JOIN Jobs J ON E.job_code = J.code
                 JOIN CountiesInOccZone C ON C.occ_zone = E.occ_zone
                 WHERE county_id = ${county} AND
                 title LIKE '%${keyword}%'
-                LIMIT 10;`
+                ORDER BY title, mean_salary
+                LIMIT ${offset}, ${pagesize};`
 
     connection.query(query, function(error, results){
         if (error){
@@ -216,6 +240,7 @@ async function jobs(req, res) {
             res.json({ error: error})
         } else {
             res.json({ results: results})
+            console.log("Queried Jobs")
         }
     })
 }
@@ -302,7 +327,7 @@ async function cityState(req, res) {
 //            User Routes
 // ********************************************
 //Route 6: Retrieve user credentials from Users database upon login
-async function users(req, res) {
+async function getUser(req, res) {
     
     const email = req.query.email
     const password = req.query.password
@@ -316,6 +341,7 @@ async function users(req, res) {
             console.log(error)
             res.json({ error: error})
         } else {
+            console.log("Retrieved User")
             res.json({ results: results})
         }
     })
@@ -328,8 +354,8 @@ async function addUser(req, res) {
     const firstName = req.query.firstName
     const lastName = req.query.lastName
     const gender = req.query.gender
-    const dob = req.query.dob ? req.query.dob: 'NULL'
-    const zip = req.query.zip ? req.query.zip: 'NULL'
+    const dob = req.query.dob && !isNaN(req.query.dob) ? req.query.dob: 'NULL'
+    const zip = req.query.zip && !isNaN(req.query.zip) ? req.query.zip: 'NULL'
 
     query = `INSERT INTO Users
     VALUES ('${email}', '${firstName}', '${lastName}', SHA1('${password}'), '${gender}', ${dob}, ${zip});`
@@ -403,5 +429,5 @@ async function modifyFavorites(req, res) {
 
 
 module.exports = {
-    counties, cityState, cities, climate, jobs,users, addUser,favorites, modifyFavorites
+    counties, prosperity, cityState, cities, climate, jobs,getUser, addUser,favorites, modifyFavorites
 }
