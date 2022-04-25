@@ -222,7 +222,6 @@ async function jobs(req, res) {
             console.log(error)
             res.json({ error: error})
         } else {
-            console.log(query)
             res.json({ results: results})
         }
     })
