@@ -164,6 +164,7 @@ async function prosperity(req, res) {
             res.json({ error: error})
         } else {
             res.json({ results: results})
+            console.log({results:results})
         }
     })
 }
@@ -231,8 +232,7 @@ async function jobs(req, res) {
                 JOIN CountiesInOccZone C ON C.occ_zone = E.occ_zone
                 WHERE county_id = ${county} AND
                 title LIKE '%${keyword}%'
-                ORDER BY title, mean_salary
-                LIMIT ${offset}, ${pagesize};`
+                ORDER BY title, mean_salary`
 
     connection.query(query, function(error, results){
         if (error){
@@ -368,11 +368,6 @@ async function modifyFavorites(req, res) {
     })
 }
 
-// ********************************************
-//            LISTINGS PAGES ROUTES
-// ********************************************
-//Route : Get Property List Based on Filter
-//Route : Fresh Api call based on Page No.
 
 
 module.exports = {

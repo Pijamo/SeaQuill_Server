@@ -41,12 +41,6 @@ app.get('/jobs', routes.jobs)
 //Route 5: Get Cities and States based on partially or fully completed city input
 app.get('/cityState', routes.cityState)
 
-
-// ********************************************
-//            LISTINGS PAGES ROUTES
-// ********************************************
-
-
 // ********************************************
 //            User Routes
 // ********************************************
