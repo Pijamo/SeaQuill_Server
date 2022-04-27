@@ -124,11 +124,20 @@ if (zip != 0){
     SELECT * 
     FROM Recommendations
     LIMIT ${offset}, ${pagesize};`
+
+    connection.query(create_temp+ recommendations, function(error, results){
+        if (error){
+            console.log(error)
+            res.json({ error: error})
+        } else {
+            res.json({ results: results[6]})
+        }
+    })
 }
 else{
     recommendations = `DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT fips_code, A.name as county, S.name as state, SUM(score_2021*ranking) / ${total} AS total_score
+    SELECT fips_code, A.name as county, S.name as state, A.state_id, SUM(score_2021*ranking) / ${total} AS total_score
     FROM AdjustedScores A JOIN States S ON S.id=A.state_id
     GROUP BY fips_code, county, state
     ORDER BY total_score DESC;
@@ -136,8 +145,7 @@ else{
     SELECT *
     FROM Recommendations
     LIMIT ${offset}, ${pagesize};`
-}
-
+    
     connection.query(create_temp+ recommendations, function(error, results){
         if (error){
             console.log(error)
@@ -146,6 +154,9 @@ else{
             res.json({ results: results[4]})
         }
     })
+}
+
+    
 }
 // ********************************************
 //            QUIZ RESULT ROUTES
