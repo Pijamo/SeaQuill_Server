@@ -250,9 +250,6 @@ async function jobs(req, res) {
 // ********************************************
 
 //Route 5: Get Cities and States based on partially or fully completed city input
-
-//Route 5: Get Cities and States based on partially or fully completed city input
-
 async function cityState(req, res) {
 
     const state = req.query.state
