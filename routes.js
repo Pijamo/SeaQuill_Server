@@ -203,7 +203,7 @@ async function cities(req, res) {
 async function climate(req, res) {
     const county = req.query.county;
 
-    query = `SELECT month, ROUND(AVG(temp_avg),0) AS 'Avg Temperature', ROUND(AVG(temp_min),0) AS 'Low Temperature', ROUND(AVG(temp_max),0) AS 'High Temperature',
+    query = `SELECT month, ROUND(AVG(temp_avg),0) AS 'Avg Temp', ROUND(AVG(temp_min),0) AS 'Low Temp', ROUND(AVG(temp_max),0) AS 'High Temp',
     ROUND(AVG(total_rain),2) AS 'Total Rain', ROUND(AVG(total_snow),2) AS 'Total Snow'
     FROM Climate C  JOIN Weather_Stations W ON C.station_id = W.id
     WHERE county_id = ${county}
