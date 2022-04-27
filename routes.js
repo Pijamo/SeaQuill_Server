@@ -245,8 +245,11 @@ async function cityState(req, res) {
         var currentName;
         var currentId;
         var nextId;
-        var jObject = {name: " ", state_id: " ", cities:[]};
+        var state;
+        var stateCode
+        var jObject = {state: " ", stateCode: " ", cities:[]};
         var rObject = [];
+        
         
         if (error){
             console.log(error)
@@ -266,22 +269,21 @@ async function cityState(req, res) {
                 }
                 else{
                     cities.push(city);
-                    jObject = {currentName, currentId, cities}
+                    state = currentName
+                    stateCode = currentId
+                    jObject = {state, stateCode, cities}
                     rObject.push(jObject)
                     cities =[]
 
                 }
-                
-                
+                      
                 }
-                
-                
+                       
 
-            }
-            
+            }    
 
 
-                // console.log(jObject)
+            // console.log(rObject[0].cities)
             res.json({ results: rObject})
                 
                     
