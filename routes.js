@@ -115,9 +115,9 @@ if (zip != 0){
         WHERE zip = ${zip};
     DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT A.fips_code, A.name, A.state_id, SUM(score_2021*ranking) / ${total} AS total_score
-    FROM AdjustedScores A
-    GROUP BY A.fips_code, A.name, A.state_id
+    SELECT A.fips_code, A.name as county, S.name as state, S.id, SUM(score_2021*ranking) / ${total} AS total_score
+    FROM AdjustedScores A JOIN States S on S.id = A.state_id
+    GROUP BY A.fips_code, A.name, id
     HAVING total_score >= (SELECT * FROM user_score)
     ORDER BY total_score DESC;  
 
@@ -137,9 +137,9 @@ if (zip != 0){
 else{
     recommendations = `DROP TABLE IF EXISTS Recommendations;
     CREATE TEMPORARY TABLE Recommendations
-    SELECT fips_code, A.name as county, S.name as state, A.state_id, SUM(score_2021*ranking) / ${total} AS total_score
+    SELECT fips_code, A.name as county, S.name as state, S.id, SUM(score_2021*ranking) / ${total} AS total_score
     FROM AdjustedScores A JOIN States S ON S.id=A.state_id
-    GROUP BY fips_code, county, state
+    GROUP BY fips_code, county, id
     ORDER BY total_score DESC;
 
     SELECT *
